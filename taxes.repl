@@ -1,0 +1,76 @@
+(load "./kda-env/init.repl")
+(print "We made it through loading")
+
+(begin-tx)
+(env-keys ["taxes"])
+(env-data
+    {
+        "taxes-gov": {
+            "keys": [
+              "taxes"
+            ],
+            "pred": "keys-all"
+          },
+        "upgrade": false
+   }
+)
+
+(load "./taxes.pact")
+(commit-tx)
+
+
+(env-gasmodel "table") (env-gaslimit 150000) (env-gas 0) 
+
+(begin-tx "set values")
+(env-keys ["taxes"])
+
+(free.taxes.update-costs "2024" 10.0)
+(free.taxes.update-costs "2023" 10.0)
+(free.taxes.update-costs "2022" 10.0)
+(free.taxes.update-costs "2021" 10.0)
+(free.taxes.update-costs "2020" 10.0)
+(env-gas)
+
+(commit-tx)
+
+(begin-tx "Purchase")
+(env-keys ["c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"])
+(env-sigs
+[{
+  "key": "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd",
+  "caps": [
+      (coin.TRANSFER "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g" 10.0)
+  ]
+}])
+(env-data
+    {
+        "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd": {
+            "keys": [
+              "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"
+            ],
+            "pred": "keys-all"
+          }
+   }
+)
+(free.taxes.process-payment "2023" "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" (read-keyset 'c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd))
+(env-gas)
+(expect-that "Amounts after create"
+ (= [990.0 10.0])
+ [
+    (coin.get-balance "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd")
+    (coin.get-balance "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g")
+ ]
+)
+
+
+;  (begin-tx "Print result")
+;  ; Testing the function with a domain and version
+;  (print (n_f9b22d2046c2a52575cc94f961c8b9a095e349e7.reg.hash-domain "kadenai.com"))
+;  (print (n_f9b22d2046c2a52575cc94f961c8b9a095e349e7.reg.select-chain-for-domain "kadenai.com" 'v0))
+;  (print (n_f9b22d2046c2a52575cc94f961c8b9a095e349e7.reg.select-chain-for-domain "kadena.com" 'v0))
+;  (print (n_f9b22d2046c2a52575cc94f961c8b9a095e349e7.reg.select-chain-for-domain "kadenai1.com" 'v0))
+;  (print (n_f9b22d2046c2a52575cc94f961c8b9a095e349e7.reg.select-chain-for-domain "kadenai2.com" 'v0))
+;  (env-gas)
+
+
+(commit-tx)
