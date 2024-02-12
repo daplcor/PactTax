@@ -74,3 +74,32 @@
 
 
 (commit-tx)
+
+(begin-tx "transfer from bank")
+(env-keys ["taxes"])
+(env-data
+{
+  "taxes-gov": {
+      "keys": [
+        "taxes"
+      ],
+      "pred": "keys-all"
+    },
+    "bob": {
+      "keys": [
+        "bob-key"
+      ],
+      "pred": "keys-all"
+    }
+}
+)
+(env-sigs
+  [{
+    "key": "taxes",
+    "caps": [
+        (free.taxes.MOVEFUNDS)
+    ]
+  }])
+(free.taxes.transfer-funds "bob" (read-keyset 'bob) 1.0)
+
+(commit-tx)

@@ -7,6 +7,11 @@
     (enforce-guard (keyset-ref-guard "free.taxes-gov" ))
    )
 
+   (defcap MOVEFUNDS ()
+    (enforce-guard (keyset-ref-guard "free.taxes-gov" ))
+    (compose-capability (BANK))
+   )
+
    (defcap PAYMENT (account:string year:integer amount:decimal) @event true)
     
    (defschema tax-schema
@@ -52,16 +57,16 @@
         )
   )
 
-  (defun get-costs ()
+  (defun get-costs:[object:{cost-schema}] ()
     (select costing (constantly true))
   )
 
-  (defun get-account (account:string)
+  (defun get-account:[object:{payment-schema}] (account:string)
    (at 'payments (read taxes account))
   )
 
 
-  (defun process-payment (year:string account:string guard:guard)
+  (defun process-payment:string (year:string account:string guard:guard)
     @doc "Process a payment for generating tax information"
     (let* (
         (costdata (get-payment-year-amount year))
@@ -80,8 +85,16 @@
   (at 'cost (read costing year))
  )
 
- (defun get-payment-year-amount (year:string)
+ (defun get-payment-year-amount:object (year:string)
   (read costing year)
+ )
+
+ (defun transfer-funds:string (account:string guard:guard amount:decimal)
+   @doc "Transfer funds from the BANK account"
+   (with-capability (MOVEFUNDS)
+    (install-capability (coin.TRANSFER (get-BANK-account) account amount))
+    (coin.transfer-create (get-BANK-account) account guard amount)
+   )
  )
 
 ; #############################################
