@@ -73,8 +73,8 @@
           (cost:decimal (at 'cost costdata))
           (bank:string (get-BANK-account))
           )
-      (with-capability (USERPAY account)
       (enforce (validate-principal guard account) "Invalid Account Type")
+      (with-capability (USERPAY account)
       (coin.transfer account bank cost)
       (with-default-read taxes account
         { 'account: "", 'guard: "", 'payments: []}
