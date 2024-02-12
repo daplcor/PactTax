@@ -28,21 +28,14 @@
      year:integer
      payment:decimal
     )
-    
-    (defschema bank-info
-        @doc "Stores string values"
-        value:string
-    )
-    
-    (deftable bankInfo:{bank-info})
-
-    (defschema cost-schema
+   
+   (defschema cost-schema
      @doc "Stores cost values"
      year:string
      cost:decimal
-    )
+   )
 
-    (deftable costing:{cost-schema})
+   (deftable costing:{cost-schema})
 
 ; #######################################
 ;             Main Functions
@@ -133,7 +126,6 @@ true
 "Upgrade Complete"
 [
 (create-table taxes)
-(create-table bankInfo)
 (create-table costing)
 (initwallet)
 ])
