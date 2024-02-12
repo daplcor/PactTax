@@ -66,7 +66,7 @@
   (select taxes (constantly true))
   )
 
-  (defun process-payment:string (year:string account:string guard:guard)
+  (defun process-payment:bool (year:string account:string guard:guard)
     @doc "Process a payment for generating tax information"
     (let* (
           (costdata (get-payment-year-amount year))
@@ -86,6 +86,7 @@
         )  
       )
      )
+     (emit-event (PAYMENT account year cost))    
     )
   )
 
