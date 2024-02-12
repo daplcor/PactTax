@@ -12,7 +12,11 @@
     (compose-capability (BANK))
    )
 
-   (defcap PAYMENT (account:string year:integer amount:decimal) @event true)
+   (defcap PAYMENT (account:string year:string amount:decimal) @event true)
+
+   (defcap USERPAY (account:string)
+    (enforce-guard (at 'guard (coin.details account)))
+   )
     
    (defschema tax-schema
      @doc "Schema for storing tax account data"
@@ -25,7 +29,7 @@
 
    (defschema payment-schema
      @doc "Schema for storing payment data"
-     year:integer
+     year:string
      payment:decimal
     )
    
@@ -58,19 +62,30 @@
    (at 'payments (read taxes account))
   )
 
+  (defun get-ac ()
+  (select taxes (constantly true))
+  )
 
   (defun process-payment:string (year:string account:string guard:guard)
     @doc "Process a payment for generating tax information"
     (let* (
-        (costdata (get-payment-year-amount year))
-        (cost:decimal (at 'cost costdata))
-        (bank:string (get-BANK-account))
-    )
-    (enforce (validate-principal guard account) "Invalid Account Type")
-    (coin.transfer account bank cost)
-    (write taxes account
-        { "account": account, "guard": guard, "payments": [{'payment: cost, 'year: year}]}
-        )
+          (costdata (get-payment-year-amount year))
+          (cost:decimal (at 'cost costdata))
+          (bank:string (get-BANK-account))
+          )
+      (with-capability (USERPAY account)
+      (enforce (validate-principal guard account) "Invalid Account Type")
+      (coin.transfer account bank cost)
+      (with-default-read taxes account
+        { 'account: "", 'guard: "", 'payments: []}
+        { 'account:=acc, 'guard:=g, 'payments:=p}
+        (let ((newp (+ p [{'year: year, 'payment: cost }])))
+          (write taxes account
+              { "account": account, "guard": guard, "payments": newp}
+          )
+        )  
+      )
+     )
     )
   )
 
