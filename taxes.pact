@@ -77,8 +77,10 @@
       (with-capability (USERPAY account)
       (coin.transfer account bank cost)
       (with-default-read taxes account
-        { 'account: "", 'guard: "", 'payments: []}
-        { 'account:=acc, 'guard:=g, 'payments:=p}
+        ;  { 'account: "", 'guard: "", 'payments: []}
+        ;  { 'account:=acc, 'guard:=g, 'payments:=p}
+        { 'payments: []}
+        { 'payments:=p}
         (let ((newp (+ p [{'year: year, 'payment: cost }])))
           (write taxes account
               { "account": account, "guard": guard, "payments": newp}
