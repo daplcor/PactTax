@@ -83,6 +83,10 @@
    (at 'payments (read taxes account))
   )
 
+  (defun get-secondary-account:[object:{payment-schema}] (account:string)
+  (at 'secondary-payment (read taxes account))
+  )
+
   (defun get-ac ()
   (select taxes (constantly true))
   )
@@ -93,25 +97,25 @@
           (costdata (get-payment-year-amount year))
           (cost:decimal (at 'cost costdata))
           (bank:string (get-BANK-account))
-          (secondaryCost:decimal (get-secondary-payment-amount year))
+          (val:bool (get-primary-year account year))
           )
 
-      (if (contains 's (read-msg 'secondary)) 
-      (coin.transfer account bank secondaryCost)  
-      (coin.transfer account bank cost))
- 
+      (enforce (= val false ) "You have already paid for this year")
       (enforce (validate-principal guard account) "Invalid Account Type")
+ 
       (with-capability (USERPAY account)
+ 
+      (coin.transfer account bank cost)
+ 
       (with-default-read taxes account
         { 'account: account, 'guard: guard, 'payments: [], 'secondary-payment: []}
         { 'account:= acc, 'guard:= g, 'payments:=p, 'secondary-payment:=sp}
 
         (enforce (= g guard) "Guards need to match")
         (let* ((newp (+ p [{'year: year, 'payment: cost }]))
-               (newsp (+ sp [{'year: year, 'secondary-account:  (if (contains 's (read-msg 'secondary)) (at 's (read-msg 'secondary)) [] ) , 'payment: secondaryCost }]))
               )
               (write taxes account
-              { "account": acc, "guard": g, "payments": newp, 'secondary-payment: (if (contains 's (read-msg 'secondary)) newsp [])}
+              { "account": acc, "guard": g, "payments": newp, 'secondary-payment: []}
           )
         )  
       )
@@ -119,8 +123,38 @@
      (emit-event (PAYMENT account year cost))    
     )
   )
+  
 
- 
+  (defun process-secondary-payment:bool (year:string account:string guard:guard secondaryAccount:string)
+  @doc "Process a secondary account payment for generating tax information"
+  (let* (
+        (bank:string (get-BANK-account))
+        (secondaryCost:decimal (get-secondary-payment-amount year))
+        (val:bool (get-secondary-year account year))
+        )
+
+    (enforce (= val false ) "You have already paid for this year")
+    (enforce (validate-principal guard account) "Invalid Account Type")
+    (with-capability (USERPAY account)
+    (with-default-read taxes account
+      { 'account: account, 'guard: guard, 'secondary-payment: []}
+      { 'account:= acc, 'guard:= g, 'secondary-payment:=sp}
+
+      (enforce (= g guard) "Guards need to match")
+      (let ((newsp (+ sp [{'year: year, 'secondary-account: secondaryAccount, 'payment: secondaryCost }]))
+            
+            )
+            (coin.transfer account bank secondaryCost)  
+
+            (update taxes account
+            { 'secondary-payment: newsp}
+        )
+      )  
+    )
+   )
+   (emit-event (PAYMENT account year secondaryCost))    
+  )
+)
 
  (defun get-payment-amount:decimal (year:string)
   (at 'cost (read costing year))
@@ -133,6 +167,26 @@
  (defun get-secondary-payment-amount:decimal (year:string)
   (* 0.25 (at 'cost (read costing year)))
  )
+
+(defun get-primary-year:bool (account:string year:string)
+ (with-default-read taxes account
+   {'payments: []}  
+   {'payments:= sp} 
+   (let ((year-entries
+           (filter (lambda (entry) (= (at 'year entry) year)) sp)))
+     (!= (length year-entries) 0))
+ )
+) 
+
+ (defun get-secondary-year:bool (account:string year:string)
+  (with-default-read taxes account
+    {'secondary-payment: []}  
+    {'secondary-payment:= sp} 
+    (let ((year-entries
+            (filter (lambda (entry) (= (at 'year entry) year)) sp)))
+      (!= (length year-entries) 0))
+  )
+) 
 
  (defun transfer-funds:string (account:string guard:guard amount:decimal)
    @doc "Transfer funds from the BANK account"
