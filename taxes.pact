@@ -15,9 +15,22 @@
    (defcap PAYMENT (account:string year:string amount:decimal) @event true)
 
    (defcap USERPAY (account:string)
-    (enforce-guard (at 'guard (coin.details account)))
+    (with-default-read taxes account {'guard: (create-null-guard) } {'guard:=guard}
+      (if (!= guard (create-null-guard)) 
+        (enforce-guard (at 'guard (coin.details account)))
+        (enforce-guard guard)
+      )
+    )
    )
-    
+   
+   (defun enforce-null:bool
+    ()
+  false)
+
+  (defun create-null-guard:guard
+    ()
+  (create-user-guard (enforce-null)))
+
    (defschema tax-schema
      @doc "Schema for storing tax account data"
      account:string
@@ -77,13 +90,14 @@
       (with-capability (USERPAY account)
       (coin.transfer account bank cost)
       (with-default-read taxes account
-        ;  { 'account: "", 'guard: "", 'payments: []}
-        ;  { 'account:=acc, 'guard:=g, 'payments:=p}
-        { 'payments: []}
-        { 'payments:=p}
+        { 'account: account, 'guard: guard, 'payments: []}
+        { 'account:= acc, 'guard:= g, 'payments:=p}
+        
+        (enforce (= g guard) "Guards need to match")
+
         (let ((newp (+ p [{'year: year, 'payment: cost }])))
           (write taxes account
-              { "account": account, "guard": guard, "payments": newp}
+              { "account": acc, "guard": g, "payments": newp}
           )
         )  
       )
