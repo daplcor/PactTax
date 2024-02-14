@@ -36,6 +36,7 @@
      account:string
      guard:guard
      payments:[object:{payment-schema}]
+     secondary-payment:[object:{secondary-payment-schema}]
    )
 
    (deftable taxes:{tax-schema})
@@ -46,6 +47,13 @@
      payment:decimal
     )
    
+   (defschema secondary-payment-schema
+    @doc "Schema for storing secondary payment data"
+     year:string
+     secondary-account:string
+     payment:decimal
+    )
+
    (defschema cost-schema
      @doc "Stores cost values"
      year:string
@@ -85,19 +93,25 @@
           (costdata (get-payment-year-amount year))
           (cost:decimal (at 'cost costdata))
           (bank:string (get-BANK-account))
+          (secondaryCost:decimal (get-secondary-payment-amount year))
           )
+
+      (if (contains 's (read-msg 'secondary)) 
+      (coin.transfer account bank secondaryCost)  
+      (coin.transfer account bank cost))
+ 
       (enforce (validate-principal guard account) "Invalid Account Type")
       (with-capability (USERPAY account)
-      (coin.transfer account bank cost)
       (with-default-read taxes account
-        { 'account: account, 'guard: guard, 'payments: []}
-        { 'account:= acc, 'guard:= g, 'payments:=p}
-        
-        (enforce (= g guard) "Guards need to match")
+        { 'account: account, 'guard: guard, 'payments: [], 'secondary-payment: []}
+        { 'account:= acc, 'guard:= g, 'payments:=p, 'secondary-payment:=sp}
 
-        (let ((newp (+ p [{'year: year, 'payment: cost }])))
-          (write taxes account
-              { "account": acc, "guard": g, "payments": newp}
+        (enforce (= g guard) "Guards need to match")
+        (let* ((newp (+ p [{'year: year, 'payment: cost }]))
+               (newsp (+ sp [{'year: year, 'secondary-account:  (if (contains 's (read-msg 'secondary)) (at 's (read-msg 'secondary)) [] ) , 'payment: secondaryCost }]))
+              )
+              (write taxes account
+              { "account": acc, "guard": g, "payments": newp, 'secondary-payment: (if (contains 's (read-msg 'secondary)) newsp [])}
           )
         )  
       )
@@ -106,12 +120,18 @@
     )
   )
 
+ 
+
  (defun get-payment-amount:decimal (year:string)
   (at 'cost (read costing year))
  )
 
  (defun get-payment-year-amount:object (year:string)
   (read costing year)
+ )
+
+ (defun get-secondary-payment-amount:decimal (year:string)
+  (* 0.25 (at 'cost (read costing year)))
  )
 
  (defun transfer-funds:string (account:string guard:guard amount:decimal)

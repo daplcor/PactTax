@@ -50,7 +50,8 @@
               "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"
             ],
             "pred": "keys-all"
-          }
+          },
+          'secondary: {}
    }
 )
 (free.taxes.process-payment "2021" "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" (read-keyset 'c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd))
@@ -82,7 +83,9 @@
               "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"
             ],
             "pred": "keys-all"
-          }
+          },
+          'secondary: {}
+
    }
 )
 (free.taxes.process-payment "2022" "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" (read-keyset 'c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd))
@@ -114,7 +117,9 @@
               "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"
             ],
             "pred": "keys-all"
-          }
+          },
+          'secondary: {}
+
    }
 )
 (free.taxes.process-payment "2023" "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" (read-keyset 'c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd))
@@ -146,7 +151,43 @@
               "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"
             ],
             "pred": "keys-all"
-          }
+          },
+          'secondary: {}
+
+   }
+)
+(free.taxes.process-payment "2024" "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" (read-keyset 'c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd))
+
+(env-gas)
+(expect-that "Amounts after create"
+ (= [980.0 20.0])
+ [
+    (coin.get-balance "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd")
+    (coin.get-balance "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g")
+ ]
+)
+(commit-tx)
+
+(begin-tx "Purchase #5")
+(env-keys ["c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"])
+(env-sigs
+[{
+  "key": "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd",
+  "caps": [
+      (coin.TRANSFER "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g" 2.5),
+      (free.taxes.USERPAY "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd")
+  ]
+}])
+(env-data
+    {
+        "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd": {
+            "keys": [
+              "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd"
+            ],
+            "pred": "keys-all"
+          },
+          'secondary: {'s: "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g"}
+
    }
 )
 (free.taxes.process-payment "2024" "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" (read-keyset 'c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd))
