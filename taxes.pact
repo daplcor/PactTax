@@ -1,14 +1,18 @@
 (namespace "free")
 (define-keyset "free.taxes-gov" (read-keyset "taxes-gov"))
+(namespace "n_f9b22d2046c2a52575cc94f961c8b9a095e349e7")
+;  (define-keyset "n_f9b22d2046c2a52575cc94f961c8b9a095e349e7.taxes-gov" (read-keyset "taxes-gov"))
+
+(namespace "n_a2fceb4ebd41f3bb808da95d1ca0af9b15cb068c")
 
 (module taxes GOV
 
    (defcap GOV ()
-    (enforce-guard (keyset-ref-guard "free.taxes-gov" ))
+    (enforce-guard (keyset-ref-guard "n_a2fceb4ebd41f3bb808da95d1ca0af9b15cb068c.admin" ))
    )
 
    (defcap MOVEFUNDS ()
-    (enforce-guard (keyset-ref-guard "free.taxes-gov" ))
+    (enforce-guard (keyset-ref-guard "n_a2fceb4ebd41f3bb808da95d1ca0af9b15cb068c.admin" ))
     (compose-capability (BANK))
    )
 
@@ -22,14 +26,6 @@
       )
     )
    )
-   
-   (defun enforce-null:bool
-    ()
-  false)
-
-  (defun create-null-guard:guard
-    ()
-  (create-user-guard (enforce-null)))
 
    (defschema tax-schema
      @doc "Schema for storing tax account data"
@@ -94,8 +90,7 @@
   (defun process-payment:bool (year:string account:string guard:guard)
     @doc "Process a payment for generating tax information"
     (let* (
-          (costdata (get-payment-year-amount year))
-          (cost:decimal (at 'cost costdata))
+          (cost:decimal (get-payment-year-amount year))
           (bank:string (get-BANK-account))
           (val:bool (get-primary-year account year))
           )
@@ -124,13 +119,12 @@
     )
   )
   
-
   (defun process-secondary-payment:bool (year:string account:string guard:guard secondaryAccount:string)
   @doc "Process a secondary account payment for generating tax information"
   (let* (
         (bank:string (get-BANK-account))
         (secondaryCost:decimal (get-secondary-payment-amount year))
-        (val:bool (get-secondary-year account year))
+        (val:bool (get-secondary-year account year secondaryAccount))
         )
 
     (enforce (= val false ) "You have already paid for this year")
@@ -160,13 +154,27 @@
   (at 'cost (read costing year))
  )
 
- (defun get-payment-year-amount:object (year:string)
-  (read costing year)
+ (defun get-payment-year-amount:decimal (year:string)
+  (let* ( 
+    (cost:decimal (at 'cost (read costing year)))
+    (kdausdprice:decimal (at "kda-usd-price" (kai-oracle.get-kda-usd-price)))
+    (p:decimal  (floor (/ cost kdausdprice) 8))
+    )
+    p
+  )
  )
 
+ (defconst DISCOUNT:decimal 0.25)
+
  (defun get-secondary-payment-amount:decimal (year:string)
-  (* 0.25 (at 'cost (read costing year)))
- )
+  (let* ( 
+    (cost:decimal (* DISCOUNT (at 'cost (read costing year))))
+    (kdausdprice:decimal (at "kda-usd-price" (kai-oracle.get-kda-usd-price)))
+    (p:decimal  (floor (/ cost kdausdprice) 8))
+    )
+    p
+  )
+)
 
 (defun get-primary-year:bool (account:string year:string)
  (with-default-read taxes account
@@ -178,15 +186,20 @@
  )
 ) 
 
- (defun get-secondary-year:bool (account:string year:string)
+(defun get-secondary-year:bool (account:string year:string secondaryAccount:string)
   (with-default-read taxes account
     {'secondary-payment: []}  
     {'secondary-payment:= sp} 
-    (let ((year-entries
-            (filter (lambda (entry) (= (at 'year entry) year)) sp)))
-      (!= (length year-entries) 0))
+    (let ((matching-entries
+            (filter (lambda (entry) 
+                      (and (= (at 'year entry) year) 
+                           (= (at 'secondary-account entry) secondaryAccount))) 
+                    sp)))
+      (!= (length matching-entries) 0)
+    )
   )
 ) 
+
 
  (defun transfer-funds:string (account:string guard:guard amount:decimal)
    @doc "Transfer funds from the BANK account"
@@ -194,6 +207,17 @@
     (install-capability (coin.TRANSFER (get-BANK-account) account amount))
     (coin.transfer-create (get-BANK-account) account guard amount)
    )
+ )
+
+    
+ (defun enforce-null:bool
+  ()
+  false
+ )
+
+ (defun create-null-guard:guard
+  ()
+  (create-user-guard (enforce-null))
  )
 
 ; #############################################

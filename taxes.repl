@@ -29,6 +29,7 @@
 (free.taxes.update-costs "2022" 10.0)
 (free.taxes.update-costs "2021" 10.0)
 (free.taxes.update-costs "2020" 10.0)
+(free.taxes.update-costs "2019" 10.0)
 (env-gas)
 
 (commit-tx)
@@ -208,7 +209,7 @@
 [{
   "key": "c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd",
   "caps": [
-      (coin.TRANSFER "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g" 2.5),
+      (coin.TRANSFER "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd" "u:free.taxes.require-BANK:DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g" 10.0),
       (free.taxes.USERPAY "k:c93a23a31cba2a5dc5802e813ee97a770f1190c3accac358ac3ff241eb5757dd")
   ]
 }])
